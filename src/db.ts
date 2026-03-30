@@ -297,6 +297,23 @@ function createSchema(database: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_icp_billing_client ON icp_billing(client_id, period_start DESC);
 
+    CREATE TABLE IF NOT EXISTS icp_deployments (
+      id              TEXT PRIMARY KEY,
+      client_id       TEXT NOT NULL REFERENCES icp_clients(id) ON DELETE CASCADE,
+      droplet_id      INTEGER NOT NULL,
+      droplet_name    TEXT NOT NULL,
+      droplet_ip      TEXT,
+      region          TEXT NOT NULL,
+      size            TEXT NOT NULL,
+      status          TEXT NOT NULL DEFAULT 'provisioning',
+      error_message   TEXT,
+      created_at      INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      updated_at      INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_icp_deployments_client ON icp_deployments(client_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_icp_deployments_droplet ON icp_deployments(droplet_id);
+
     CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
       summary,
       raw_text,
