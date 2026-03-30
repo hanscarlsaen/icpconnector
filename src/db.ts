@@ -246,6 +246,57 @@ function createSchema(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_audit_agent ON audit_log(agent_id, created_at DESC);
 
+    -- ── ICP Lead Discovery Platform ──────────────────────────────────
+    CREATE TABLE IF NOT EXISTS icp_clients (
+      id            TEXT PRIMARY KEY,
+      company_name  TEXT NOT NULL,
+      contact_email TEXT NOT NULL,
+      channel_type  TEXT NOT NULL,
+      crm_type      TEXT NOT NULL,
+      created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS icp_credentials (
+      id              TEXT PRIMARY KEY,
+      client_id       TEXT NOT NULL REFERENCES icp_clients(id) ON DELETE CASCADE,
+      channel_type    TEXT NOT NULL,
+      crm_type        TEXT NOT NULL,
+      access_token    TEXT NOT NULL,
+      refresh_token   TEXT,
+      token_expiry    INTEGER,
+      created_at      INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      updated_at      INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      UNIQUE(client_id, channel_type, crm_type)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_icp_credentials_client ON icp_credentials(client_id);
+
+    CREATE TABLE IF NOT EXISTS icp_usage (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id        TEXT NOT NULL REFERENCES icp_clients(id) ON DELETE CASCADE,
+      date             TEXT NOT NULL,
+      leads_delivered  INTEGER NOT NULL DEFAULT 0,
+      created_at       INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      UNIQUE(client_id, date)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_icp_usage_client ON icp_usage(client_id, date DESC);
+
+    CREATE TABLE IF NOT EXISTS icp_billing (
+      id                      TEXT PRIMARY KEY,
+      client_id               TEXT NOT NULL REFERENCES icp_clients(id) ON DELETE CASCADE,
+      stripe_customer_id      TEXT NOT NULL,
+      stripe_invoice_id       TEXT,
+      period_start            INTEGER NOT NULL,
+      period_end              INTEGER NOT NULL,
+      invoice_amount_cents    INTEGER NOT NULL DEFAULT 0,
+      status                  TEXT NOT NULL DEFAULT 'pending',
+      created_at              INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      paid_at                 INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_icp_billing_client ON icp_billing(client_id, period_start DESC);
+
     CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
       summary,
       raw_text,
@@ -537,6 +588,12 @@ export function _initTestDatabase(): void {
   db.pragma('journal_mode = WAL');
   createSchema(db);
   runMigrations(db);
+}
+
+/** Returns the active database instance. Throws if not yet initialised. */
+export function getDb(): Database.Database {
+  if (!db) throw new Error('Database not initialised. Call initDatabase() first.');
+  return db;
 }
 
 export function getSession(chatId: string, agentId = 'main'): string | undefined {
