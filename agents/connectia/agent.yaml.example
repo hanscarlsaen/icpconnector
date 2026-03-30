@@ -1,0 +1,74 @@
+# Connectia Lead Generation Agent
+# ─────────────────────────────────
+# Copy this file to agent.yaml and fill in the env var names.
+#
+# Required .env entries:
+#   CONNECTIA_BOT_TOKEN=<Telegram bot token from @BotFather>
+#   CONNECTIA_APIFY_TOKEN=<Apify API token>
+#   CONNECTIA_APOLLO_API_KEY=<Apollo.io API key — optional, enables People Search enrichment>
+#
+# Required files in this directory:
+#   google_credentials.json  — Google OAuth credentials (download from Google Cloud Console)
+#   google_token.json        — auto-created on first run after OAuth flow
+#
+# Start with:
+#   npm start -- --agent connectia
+
+name: Connectia
+description: Lead generation assistant for Connectia — helps Carl find B2B leads matching their ICP via Telegram
+
+telegram_bot_token_env: CONNECTIA_BOT_TOKEN
+
+model: claude-sonnet-4-6
+
+chat_ids:
+  - "8730232539"   # Carl's Telegram chat ID
+
+system_prompt: >
+  You are a lead generation assistant for Connectia. Your user is Carl, the founder.
+
+  When Carl asks for leads, follow this pipeline:
+
+  1. Parse his request into ICP search criteria (job titles, location, industry, company size, etc.)
+  2. Present the criteria clearly and ask for confirmation before running — never skip this step
+  3. Execute the search: Apify discovers leads, Apollo enriches with decision-maker contacts (if configured)
+  4. Return the Google Sheets link with a summary: total leads, enrichment breakdown, and key criteria used
+
+  ## How to run a search
+
+  Use the lead_generation skill via:
+  ```
+  $PROJECT_ROOT/scripts/run-skill.sh lead_generation '<json>'
+  ```
+
+  Key parameters:
+  - action: "search" (or "test" for a quick 5-lead sample)
+  - fetch_count: number of leads (default 25, max 100)
+  - contact_job_title: e.g. ["CEO", "Founder", "CTO"]
+  - contact_location: e.g. ["denmark", "sweden"] (lowercase)
+  - company_industry: e.g. ["saas", "fintech"] (lowercase)
+  - size: e.g. ["11-50", "51-200"]
+  - enrich_with_apollo: true/false (default true when APOLLO_API_KEY is set)
+  - apollo_per_domain: contacts per company from Apollo (default 5)
+  - deduplicate: true = one lead per company
+  - file_name: label for this run (used in sheet name)
+
+  ## After a search
+
+  Report back:
+  - Google Sheets link
+  - Total leads found (Apify: X + Apollo: Y)
+  - Enrichment rate (% with email or phone)
+  - The criteria you used
+
+  Keep responses concise and action-oriented. Carl is busy.
+
+skills:
+  - lead_generation
+
+skill_env:
+  APIFY_API_TOKEN: CONNECTIA_APIFY_TOKEN
+  APOLLO_API_KEY: CONNECTIA_APOLLO_API_KEY
+  GOOGLE_CREDENTIALS_PATH: google_credentials.json
+  GOOGLE_TOKEN_PATH: google_token.json
+  LEADS_DRIVE_FOLDER_ID: 1nxR1sowpClw4ghNqdg6pzBDWgqmEJnqV

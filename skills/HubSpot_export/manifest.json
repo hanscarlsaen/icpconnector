@@ -1,0 +1,44 @@
+{
+  "name": "HubSpot_export",
+  "description": "Push enriched leads to HubSpot CRM. Creates or updates contacts and companies using HubSpot API v3. Deduplicates by email. Returns a summary of created/updated/skipped contacts.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["export", "test"],
+        "description": "Action to perform. 'export' pushes leads to HubSpot, 'test' runs a dry-run with sample data."
+      },
+      "leads": {
+        "type": "array",
+        "description": "List of enriched lead objects to push to HubSpot",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "first_name": { "type": "string" },
+            "last_name": { "type": "string" },
+            "email": { "type": "string" },
+            "phone": { "type": "string" },
+            "job_title": { "type": "string" },
+            "linkedin_url": { "type": "string" },
+            "company_name": { "type": "string" },
+            "company_domain": { "type": "string" },
+            "company_website": { "type": "string" },
+            "company_size": { "type": "string" },
+            "company_industry": { "type": "string" },
+            "company_location": { "type": "string" },
+            "enrichment_source": { "type": "string" }
+          }
+        }
+      },
+      "owner_id": {
+        "type": "string",
+        "description": "Optional HubSpot owner ID to assign all imported contacts to"
+      }
+    },
+    "required": ["action"]
+  },
+  "handler": "py",
+  "timeout_ms": 120000
+}

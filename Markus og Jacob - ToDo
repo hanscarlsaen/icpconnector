@@ -1,0 +1,9 @@
+ 1. Secrets ud af git — fjern hardcoded keys fra clients/connectia.json, rotate kompromitterede tokens         
+  2. Konverter Connectia til agent.yaml — nyt format med skills, skill_env, system_prompt, chat_ids
+  3. Udvid agent-config.ts — parse de nye felter og inject skill_env som env vars                               
+  4. Google auth: OAuth → service account — ingen token-udløb, nemmere per-kunde setup                          
+  5. Onboarding-script — automatiser: opret droplet → clone repo → konfigurer agent → start                     
+  6. Health endpoint — simpelt /health endpoint så DO uptime checks kan monitorere                              
+  7. Opdateringsstrategi — hvordan pusher du kodeændringer ud til alle droplets                                 
+  8. Apify-strategi — ét token per kunde vs. delt, håndtering af grænser                                        
+  9. Slet ubrugt kode — strip WhatsApp, voice, Obsidian etc. fra dette repo (eller fork et lean repo)  

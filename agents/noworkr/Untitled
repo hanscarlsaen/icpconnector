@@ -1,0 +1,1 @@
+Nej, min tanke var, at vi i, ehhm, i @agent.yaml kan specificere, hvilke skills agenten har adgang til. Så vi har skills, der kan—mange forskellige skills, der kan noget forskelligt. Men så kan vi i @agent.yaml -filen konfigurere, hvilke skills de forskellige agenter har adgang til.

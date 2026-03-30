@@ -1,0 +1,31 @@
+{
+  "name": "Lead_generation",
+  "description": "Fetch B2B leads from Apify based on search criteria and export to Google Sheets. Supports filtering by job title, location, industry, company size, revenue, and funding stage.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["search", "test"],
+        "description": "Action to perform. 'search' fetches leads with criteria, 'test' runs a 5-lead test."
+      },
+      "fetch_count": { "type": "integer", "description": "Number of leads to fetch (max 100 on free plan)" },
+      "file_name": { "type": "string", "description": "Label for this run (used in sheet name)" },
+      "contact_job_title": { "type": "array", "items": { "type": "string" }, "description": "Target job titles" },
+      "contact_location": { "type": "array", "items": { "type": "string" }, "description": "Target locations (lowercase)" },
+      "contact_not_location": { "type": "array", "items": { "type": "string" }, "description": "Locations to exclude" },
+      "email_status": { "type": "array", "items": { "type": "string" }, "description": "Email validation status filter" },
+      "size": { "type": "array", "items": { "type": "string" }, "description": "Company size ranges" },
+      "company_industry": { "type": "array", "items": { "type": "string" }, "description": "Industries (must be lowercase)" },
+      "company_keywords": { "type": "array", "items": { "type": "string" }, "description": "Keywords in company description" },
+      "has_phone": { "type": "boolean", "description": "Only leads with phone numbers" },
+      "min_revenue": { "type": "string", "description": "Minimum revenue filter" },
+      "max_revenue": { "type": "string", "description": "Maximum revenue filter" },
+      "funding": { "type": "array", "items": { "type": "string" }, "description": "Funding stage filter" },
+      "deduplicate": { "type": "boolean", "description": "Deduplicate leads by company (one per company)" }
+    },
+    "required": ["action"]
+  },
+  "handler": "py",
+  "timeout_ms": 360000
+}
