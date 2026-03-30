@@ -59,6 +59,7 @@ import { processMessageFromDashboard } from './bot.js';
 import { getDashboardHtml } from './dashboard-html.js';
 import { logger } from './logger.js';
 import { getTelegramConnected, getBotInfo, chatEvents, getIsProcessing, abortActiveQuery, ChatEvent } from './state.js';
+import { createOAuthRoutes } from './oauth-routes.js';
 
 async function classifyTaskAgent(prompt: string): Promise<string | null> {
   try {
@@ -115,8 +116,16 @@ export function startDashboard(botApi?: Api<RawApi>): void {
     return c.json({ error: 'Internal server error' }, 500);
   });
 
-  // Token auth middleware
+  // OAuth routes — mounted before token auth since callbacks come from external providers
+  app.route('/api/oauth', createOAuthRoutes());
+
+  // Token auth middleware — skips OAuth callback paths (handled by OAuth state param CSRF)
   app.use('*', async (c, next) => {
+    const path = new URL(c.req.url).pathname;
+    if (path.startsWith('/api/oauth/')) {
+      await next();
+      return;
+    }
     const token = c.req.query('token');
     if (!DASHBOARD_TOKEN || !token || token !== DASHBOARD_TOKEN) {
       return c.json({ error: 'Unauthorized' }, 401);
