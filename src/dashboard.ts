@@ -60,6 +60,7 @@ import { getDashboardHtml } from './dashboard-html.js';
 import { logger } from './logger.js';
 import { getTelegramConnected, getBotInfo, chatEvents, getIsProcessing, abortActiveQuery, ChatEvent } from './state.js';
 import { createOAuthRoutes } from './oauth-routes.js';
+import { addBotsToPool, getPoolStatus, listPoolBots, retireBot, unassignBot, assignBot } from './bot-pool.js';
 
 async function classifyTaskAgent(prompt: string): Promise<string | null> {
   try {
@@ -562,6 +563,73 @@ export function startDashboard(botApi?: Api<RawApi>): void {
   app.get('/api/agents/:id/status', (c) => {
     const agentId = c.req.param('id');
     return c.json({ running: isAgentRunning(agentId) });
+  });
+
+  // ── Bot Pool Admin ──────────────────────────────────────────────────
+
+  // Add bots to pool (accepts array of tokens)
+  app.post('/admin/bot-pool/add', async (c) => {
+    const body = await c.req.json<{ tokens?: string[] }>();
+    const tokens = body?.tokens;
+    if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
+      return c.json({ error: 'tokens array required' }, 400);
+    }
+    if (tokens.length > 50) {
+      return c.json({ error: 'Maximum 50 tokens per request' }, 400);
+    }
+    const result = await addBotsToPool(tokens);
+    return c.json(result);
+  });
+
+  // Pool status summary
+  app.get('/admin/bot-pool/status', (c) => {
+    const status = getPoolStatus();
+    return c.json(status);
+  });
+
+  // List all bots in pool (no tokens exposed)
+  app.get('/admin/bot-pool/list', (c) => {
+    const bots = listPoolBots();
+    return c.json({ bots });
+  });
+
+  // Retire a bot
+  app.post('/admin/bot-pool/retire/:id', (c) => {
+    const id = c.req.param('id');
+    const result = retireBot(id);
+    if (!result.ok) return c.json({ error: result.error }, 400);
+    return c.json({ ok: true });
+  });
+
+  // Unassign a bot (return to available)
+  app.post('/admin/bot-pool/unassign/:id', (c) => {
+    const id = c.req.param('id');
+    const result = unassignBot(id);
+    if (!result.ok) return c.json({ error: result.error }, 400);
+    return c.json({ ok: true });
+  });
+
+  // Assign a bot to a client
+  app.post('/admin/bot-pool/assign', async (c) => {
+    const body = await c.req.json<{
+      clientId?: string;
+      displayName?: string;
+      description?: string;
+      shortDescription?: string;
+    }>();
+
+    const clientId = body?.clientId?.trim();
+    const displayName = body?.displayName?.trim();
+    if (!clientId) return c.json({ error: 'clientId required' }, 400);
+    if (!displayName) return c.json({ error: 'displayName required' }, 400);
+
+    try {
+      const result = await assignBot(clientId, displayName, body?.description, body?.shortDescription);
+      return c.json(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return c.json({ error: msg }, 400);
+    }
   });
 
   // ── Security & Audit ─────────────────────────────────────────────────

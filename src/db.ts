@@ -314,6 +314,21 @@ function createSchema(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_icp_deployments_client ON icp_deployments(client_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_icp_deployments_droplet ON icp_deployments(droplet_id);
 
+    -- ── Telegram Bot Pool ───────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS telegram_bot_pool (
+      id                TEXT PRIMARY KEY,
+      bot_token         TEXT NOT NULL,
+      bot_username      TEXT NOT NULL,
+      status            TEXT NOT NULL DEFAULT 'available',
+      assigned_client_id TEXT REFERENCES icp_clients(id) ON DELETE SET NULL,
+      display_name      TEXT,
+      created_at        INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      assigned_at       INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_bot_pool_status ON telegram_bot_pool(status, created_at ASC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_bot_pool_username ON telegram_bot_pool(bot_username);
+
     CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
       summary,
       raw_text,

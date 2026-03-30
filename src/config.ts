@@ -23,6 +23,8 @@ const envConfig = readEnvFile([
   'SECURITY_PIN_HASH',
   'IDLE_LOCK_MINUTES',
   'EMERGENCY_KILL_PHRASE',
+  'BOT_POOL_ADMIN_CHAT_ID',
+  'BOT_POOL_MIN_AVAILABLE',
 ]);
 
 // ── Multi-agent support ──────────────────────────────────────────────
@@ -170,4 +172,14 @@ export const IDLE_LOCK_MINUTES = parseInt(
 // Emergency kill phrase. Sending this to any bot immediately stops all agents and exits.
 export const EMERGENCY_KILL_PHRASE =
   process.env.EMERGENCY_KILL_PHRASE || envConfig.EMERGENCY_KILL_PHRASE || '';
+
+// Bot pool — Telegram chat ID to send pool alerts to (e.g. low-stock warnings)
+export const BOT_POOL_ADMIN_CHAT_ID =
+  process.env.BOT_POOL_ADMIN_CHAT_ID || envConfig.BOT_POOL_ADMIN_CHAT_ID || '';
+
+// Minimum available bots before alerting. Default: 10.
+export const BOT_POOL_MIN_AVAILABLE = parseInt(
+  process.env.BOT_POOL_MIN_AVAILABLE || envConfig.BOT_POOL_MIN_AVAILABLE || '10',
+  10,
+);
 

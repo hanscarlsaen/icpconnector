@@ -15,6 +15,7 @@ import { runDecaySweep } from './memory.js';
 import { initOrchestrator } from './orchestrator.js';
 import { initScheduler } from './scheduler.js';
 import { setTelegramConnected, setBotInfo } from './state.js';
+import { checkPoolAndAlert } from './bot-pool.js';
 
 // Parse --agent flag
 const agentFlagIndex = process.argv.indexOf('--agent');
@@ -225,6 +226,14 @@ async function main(): Promise<void> {
     );
   } else {
     logger.warn('ALLOWED_CHAT_ID not set — scheduler disabled (no destination for results)');
+  }
+
+  // Bot pool monitoring — check every hour, alert if pool is low
+  if (AGENT_ID === 'main') {
+    setInterval(() => void checkPoolAndAlert().catch((err) =>
+      logger.error({ err }, 'Bot pool monitor check failed'),
+    ), 3600_000);
+    logger.info('Bot pool monitor started (checking every 60min)');
   }
 
   const shutdown = async () => {
