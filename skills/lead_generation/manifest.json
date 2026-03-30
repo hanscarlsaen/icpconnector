@@ -22,7 +22,8 @@
       "min_revenue": { "type": "string", "description": "Minimum revenue filter" },
       "max_revenue": { "type": "string", "description": "Maximum revenue filter" },
       "funding": { "type": "array", "items": { "type": "string" }, "description": "Funding stage filter" },
-      "deduplicate": { "type": "boolean", "description": "Deduplicate leads by company (one per company)" }
+      "deduplicate": { "type": "boolean", "description": "Deduplicate leads by company (one per company)" },
+      "spreadsheet_id": { "type": "string", "description": "Append to existing sheet instead of creating new" }
     },
     "required": ["action"]
   },

@@ -13,10 +13,9 @@ import json
 # Add skill directory to path so co-located modules can be imported
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lead_config import SearchCriteria, APOLLO_API_KEY
+from lead_config import SearchCriteria
 from lead_scraper import fetch_leads, fetch_leads_from_dict, deduplicate_by_company
 from lead_sheets import create_leads_sheet, add_leads, add_criteria, get_existing_sheet_url
-from apollo_enrichment import enrich_leads_with_apollo
 
 
 def run_search(params: dict) -> dict:
@@ -24,17 +23,11 @@ def run_search(params: dict) -> dict:
 
     Pipeline:
       1. Apify lead scanner  — discovers companies + contacts matching ICP criteria
-      2. Apollo enrichment   — optional; adds decision-maker contacts per company domain
-      3. Google Sheets       — exports all leads and writes a Summary tab
+      2. Google Sheets       — exports all leads and writes a Summary tab
     """
     fetch_count = params.get("fetch_count", 25)
     file_name = params.get("file_name", "lead_search")
     existing_sheet_id = params.get("spreadsheet_id")  # optional: append to existing sheet
-
-    # Apollo enrichment: enabled by default when APOLLO_API_KEY is set,
-    # can be explicitly controlled via enrich_with_apollo param
-    enrich_with_apollo = params.get("enrich_with_apollo", bool(APOLLO_API_KEY))
-    apollo_per_domain = int(params.get("apollo_per_domain", 5))
 
     criteria = SearchCriteria(
         fetch_count=fetch_count,
@@ -54,19 +47,11 @@ def run_search(params: dict) -> dict:
 
     # Step 1: Apify — discover leads matching ICP criteria
     leads = fetch_leads(criteria)
-    apify_count = len(leads)
 
     if params.get("deduplicate", False):
         leads = deduplicate_by_company(leads)
 
-    # Step 2: Apollo — enrich with additional decision-maker contacts (optional)
-    apollo_count = 0
-    if enrich_with_apollo:
-        enriched = enrich_leads_with_apollo(leads, per_domain=apollo_per_domain)
-        apollo_count = len(enriched) - len(leads)
-        leads = enriched
-
-    # Step 3: Google Sheets — export all leads
+    # Step 2: Google Sheets — export all leads
     if existing_sheet_id:
         sheet_id = existing_sheet_id
         sheet_url = get_existing_sheet_url(sheet_id)
@@ -80,8 +65,6 @@ def run_search(params: dict) -> dict:
     return {
         "status": "success",
         "leads_count": len(leads),
-        "apify_count": apify_count,
-        "apollo_count": apollo_count,
         "sheet_url": sheet_url,
         "file_name": file_name,
         "spreadsheet_id": sheet_id,

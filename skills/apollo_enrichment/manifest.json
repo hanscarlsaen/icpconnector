@@ -1,0 +1,21 @@
+{
+  "name": "Apollo_enrichment",
+  "description": "Enrich a list of leads with Apollo.io People Search. Accepts leads as JSON array, adds decision-maker contacts per company domain, returns enriched leads.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "leads": {
+        "type": "array",
+        "items": { "type": "object" },
+        "description": "Array of lead objects (output from lead_generation skill). Each object should have at minimum a 'company_domain' field."
+      },
+      "per_domain": {
+        "type": "integer",
+        "description": "Max decision-maker contacts to fetch per company domain (default 5)"
+      }
+    },
+    "required": ["leads"]
+  },
+  "handler": "py",
+  "timeout_ms": 360000
+}

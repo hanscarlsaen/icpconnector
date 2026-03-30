@@ -1,6 +1,6 @@
 ---
 name: lead_generation
-description: Search for B2B leads via Apify, optionally enrich with Apollo People Search, and export results to Google Sheets. Supports filtering by job title, location, industry, company size, revenue, and funding stage.
+description: Search for B2B leads via Apify and export results to Google Sheets. Supports filtering by job title, location, industry, company size, revenue, and funding stage.
 allowed-tools: Bash($PROJECT_ROOT/scripts/run-skill.sh lead_generation *)
 ---
 
@@ -8,11 +8,12 @@ allowed-tools: Bash($PROJECT_ROOT/scripts/run-skill.sh lead_generation *)
 
 ## Purpose
 
-Full B2B lead generation pipeline: **Apify → Apollo → Google Sheets**
+B2B lead discovery pipeline: **Apify → Google Sheets**
 
 1. **Apify** — discovers companies and contacts matching ICP criteria
-2. **Apollo** *(optional)* — enriches with additional decision-maker contacts per company
-3. **Google Sheets** — exports all leads with a Summary tab (counts, enrichment rate)
+2. **Google Sheets** — exports all leads with a Summary tab (counts, enrichment rate)
+
+For Apollo contact enrichment, use the separate `apollo_enrichment` skill after this one.
 
 ## How to Invoke
 
@@ -44,14 +45,7 @@ JSON object with the following fields:
 | `min_revenue` | string | No | Minimum revenue filter |
 | `max_revenue` | string | No | Maximum revenue filter |
 | `funding` | string[] | No | Funding stage filter |
-| `deduplicate` | boolean | No | One lead per company (dedup before Apollo step) |
-
-### Apollo Enrichment (optional)
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `enrich_with_apollo` | boolean | `true` if `APOLLO_API_KEY` is set | Enable Apollo People Search enrichment |
-| `apollo_per_domain` | integer | 5 | Max decision-maker contacts to fetch per company domain |
+| `deduplicate` | boolean | No | One lead per company (dedup before export) |
 
 ### Sheet Options
 
@@ -61,11 +55,11 @@ JSON object with the following fields:
 
 ## Example
 
-User says: "Find 10 CEO leads in Denmark in SaaS companies with 11-50 employees, and enrich with Apollo"
+User says: "Find 10 CEO leads in Denmark in SaaS companies with 11-50 employees"
 
 Invoke:
 ```bash
-$PROJECT_ROOT/scripts/run-skill.sh lead_generation '{"action":"search","fetch_count":10,"file_name":"dk_saas_ceos","contact_job_title":["CEO"],"contact_location":["denmark"],"company_industry":["saas"],"size":["11-50"],"enrich_with_apollo":true,"apollo_per_domain":5}'
+$PROJECT_ROOT/scripts/run-skill.sh lead_generation '{"action":"search","fetch_count":10,"file_name":"dk_saas_ceos","contact_job_title":["CEO"],"contact_location":["denmark"],"company_industry":["saas"],"size":["11-50"]}'
 ```
 
 ## Output
@@ -73,18 +67,12 @@ $PROJECT_ROOT/scripts/run-skill.sh lead_generation '{"action":"search","fetch_co
 ```json
 {
   "status": "success",
-  "leads_count": 42,
-  "apify_count": 10,
-  "apollo_count": 32,
+  "leads_count": 10,
   "sheet_url": "https://docs.google.com/spreadsheets/d/...",
   "file_name": "dk_saas_ceos",
   "spreadsheet_id": "..."
 }
 ```
-
-- `leads_count` — total leads exported (Apify + Apollo combined)
-- `apify_count` — leads from the Apify step
-- `apollo_count` — additional contacts added by Apollo (0 if enrichment skipped)
 
 On error:
 ```json
@@ -100,7 +88,7 @@ On error:
 2. **Present the criteria to the user for confirmation before running** — always confirm
 3. After confirmation, invoke `run-skill.sh` with the JSON input
 4. Return the Google Sheets link and a summary:
-   - Total leads (Apify + Apollo)
+   - Total leads
    - Enrichment rate (% with email or phone)
    - Sheet URL
 
@@ -109,7 +97,6 @@ On error:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `APIFY_API_TOKEN` | Yes | Apify API token for the leads-finder actor |
-| `APOLLO_API_KEY` | No | Apollo.io API key — enables People Search enrichment step |
 | `GOOGLE_CREDENTIALS_PATH` | Yes | Path to Google OAuth credentials JSON |
 | `GOOGLE_TOKEN_PATH` | Yes | Path to Google OAuth token JSON |
 | `LEADS_DRIVE_FOLDER_ID` | No | Google Drive folder ID to save sheets into |
@@ -119,4 +106,4 @@ On error:
 - ALWAYS confirm criteria with the user before running the search
 - ALWAYS use `$PROJECT_ROOT/scripts/run-skill.sh` to invoke — never call handler.py directly
 - If the user says "test", use `{"action":"test"}` for a quick 5-lead sample
-- Apollo enrichment is automatically enabled when `APOLLO_API_KEY` is set; pass `"enrich_with_apollo": false` to skip it explicitly
+- For Apollo enrichment of results, use the `apollo_enrichment` skill separately

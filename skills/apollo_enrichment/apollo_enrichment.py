@@ -4,16 +4,25 @@ Apollo Enrichment Module
 Uses Apollo.io People Search API to enrich leads with additional
 decision-maker contacts at companies discovered by Apify.
 
-This is an optional second step in the pipeline:
-  Apify (company discovery) → Apollo (people enrichment) → Sheets
+Pipeline: lead_generation (Apify) -> apollo_enrichment (Apollo) -> export skill
+Each skill is independent and can be used alone or in sequence.
 
 If APOLLO_API_KEY is not set, returns the original leads unchanged with a warning.
 """
 
-import requests
+import os
+import sys
+from pathlib import Path
 from typing import List
 
-from lead_config import Lead, APOLLO_API_KEY
+import requests
+
+# Add skills root to path so shared modules can be imported
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from shared.lead_model import Lead  # noqa: E402
+
+APOLLO_API_KEY = os.environ.get("APOLLO_API_KEY")
 
 APOLLO_PEOPLE_SEARCH_URL = "https://api.apollo.io/v1/mixed_people/search"
 
@@ -47,10 +56,10 @@ def enrich_leads_with_apollo(leads: List[Lead], per_domain: int = 5) -> List[Lea
         print("APOLLO_API_KEY not set — skipping Apollo enrichment step", flush=True)
         return leads
 
-    # Collect unique company domains from Apify results
+    # Collect unique company domains from input leads
     domains = list({lead.company_domain for lead in leads if lead.company_domain})
     if not domains:
-        print("No company domains in Apify results — skipping Apollo enrichment", flush=True)
+        print("No company domains in input leads — skipping Apollo enrichment", flush=True)
         return leads
 
     print(
